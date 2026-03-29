@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>דילמה AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0f; color: #f0ece0; font-family: 'Heebo', sans-serif; min-height: 100vh; padding: 32px 16px; }
+.logo { font-size: 52px; font-weight: 700; background: linear-gradient(135deg, #e8c97e, #7eb8e8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
+.tagline { color: #7a7a8a; font-size: 15px; text-align: center; margin: 8px 0 32px; }
+.lang-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; }
+.lang-btn { background: #13131a; color: #7a7a8a; border: 1px solid #2a2a38; border-radius: 20px; padding: 6px 16px; cursor: pointer; font-size: 13px; font-family: 'Heebo', sans-serif; }
+.lang-btn.active { background: #e8c97e; color: #0a0a0f; border-color: #e8c97e; font-weight: 700; }
+.card { max-width: 640px; margin: 0 auto 20px; background: #1a1a24; border: 1px solid #2a2a38; border-radius: 20px; padding: 32px; }
+label { display: block; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #e8c97e; margin-bottom: 10px; font-weight: 700; }
+input, textarea { width: 100%; background: #13131a; border: 1px solid #2a2a38; border-radius: 12px; padding: 14px 18px; color: #f0ece0; font-size: 15px; outline: none; font-family: 'Heebo', sans-serif; box-sizing: border-box; }
+textarea { resize: vertical; min-height: 90px; }
+.field { margin-bottom: 22px; }
+.opt-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+.opt-row input { flex: 1; }
+.rm-btn { background: none; border: 1px solid #2a2a38; color: #7a7a8a; width: 36px; height: 36px; border-radius: 8px; cursor: pointer; font-size: 18px; flex-shrink: 0; }
+.add-btn { width: 100%; background: none; border: 1px dashed #2a2a38; color: #7a7a8a; border-radius: 10px; padding: 10px; cursor: pointer; font-size: 14px; font-family: 'Heebo', sans-serif; margin-top: 4px; }
+.submit-btn { width: 100%; background: linear-gradient(135deg, #e8c97e, #d4a843); border: none; border-radius: 14px; padding: 18px; color: #0a0a0f; font-size: 17px; font-weight: 700; cursor: pointer; font-family: 'Heebo', sans-serif; }
+.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.error { background: rgba(232,126,126,0.1); border: 1px solid rgba(232,126,126,0.3); border-radius: 10px; padding: 14px 18px; color: #e87e7e; font-size: 14px; margin-top: 14px; }
+.result-card { max-width: 640px; margin: 0 auto; background: #1a1a24; border: 1px solid #e8c97e; border-radius: 20px; padding: 32px; display: none; }
+.result-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: #e8c97e; font-weight: 700; margin-bottom: 20px; }
+.result-text { font-size: 16px; line-height: 1.8; white-space: pre-wrap; }
+.share-btn { width: 100%; background: #13131a; border: 1px solid #2a2a38; border-radius: 10px; padding: 12px; color: #f0ece0; font-size: 14px; cursor: pointer; margin-top: 20px; font-family: 'Heebo', sans-serif; }
+</style>
+</head>
+<body>
+
+<div class="lang-row">
+  <button class="lang-btn active" onclick="setLang('he')">עברית</button>
+  <button class="lang-btn" onclick="setLang('en')">English</button>
+</div>
+<div class="logo" id="logo">דילמה AI</div>
+<p class="tagline" id="tagline">תן ל-AI לעזור לך להחליט</p>
+
+<div class="card">
+  <div class="field">
+    <label id="lbl-dilemma">🤔 מה הדילמה שלך?</label>
+    <textarea id="dilemma" placeholder="לדוגמה: אני לא יודע אם לעזוב את העבודה..."></textarea>
+  </div>
+  <div class="field">
+    <label id="lbl-options">⚖️ האפשרויות (לפחות 2)</label>
+    <div id="optionsList">
+      <div class="opt-row"><input placeholder="אפשרות 1" /><button class="rm-btn" onclick="removeOpt(this)">×</button></div>
+      <div class="opt-row"><input placeholder="אפשרות 2" /><button class="rm-btn" onclick="removeOpt(this)">×</button></div>
+    </div>
+    <button class="add-btn" id="btn-add" onclick="addOpt()">+ הוסף אפשרות</button>
+  </div>
+  <div class="field">
+    <label id="lbl-pref">💭 העדפה אישית (אופציונלי)</label>
+    <input id="preference" placeholder="לדוגמה: אני מעדיף יציבות..." />
+  </div>
+  <button class="submit-btn" id="submitBtn" onclick="solve()">
+    <span id="btn-text">✨ עזור לי להחליט!</span>
+  </button>
+  <div class="error" id="errorMsg" style="display:none"></div>
+</div>
+
+<div class="result-card" id="resultCard">
+  <div class="result-label" id="result-label">ההמלצה שלי</div>
+  <div class="result-text" id="resultText"></div>
+  <button class="share-btn" id="btn-share" onclick="shareResult()">📤 שתף</button>
+</div>
+
+<script>
+let lang = "he";
+
+const T = {
+  he: {
+    logo: "דילמה AI", tagline: "תן ל-AI לעזור לך להחליט",
+    lblDilemma: "🤔 מה הדילמה שלך?", lblOptions: "⚖️ האפשרויות (לפחות 2)",
+    lblPref: "💭 העדפה אישית (אופציונלי)", btnAdd: "+ הוסף אפשרות",
+    btnGo: "✨ עזור לי להחליט!", loading: "ה-AI חושב...",
+    resultLabel: "ההמלצה שלי", btnShare: "📤 שתף",
+    errDilemma: "נא לתאר את הדילמה", errOptions: "נא להכניס לפחות 2 אפשרויות",
+    errApi: "שגיאה, נסה שוב", optPh: n => "אפשרות " + n,
+    dilemmaPh: "לדוגמה: אני לא יודע אם לעזוב את העבודה...",
+    prefPh: "לדוגמה: אני מעדיף יציבות...",
+    prompt: (d, o, p) => "אתה יועץ חכם. דילמה: " + d + ". אפשרויות: " + o.join(", ") + (p ? ". העדפה: " + p : "") + ". תן ניתוח קצר (3 משפטים) והמלצה ברורה. בעברית, חם ואנושי."
+  },
+  en: {
+    logo: "Dilemma AI", tagline: "Let AI help you decide",
+    lblDilemma: "🤔 What's your dilemma?", lblOptions: "⚖️ Your options (at least 2)",
+    lblPref: "💭 Personal preference (optional)", btnAdd: "+ Add option",
+    btnGo: "✨ Help me decide!", loading: "AI is thinking...",
+    resultLabel: "My Recommendation", btnShare: "📤 Share",
+    errDilemma: "Please describe your dilemma", errOptions: "Please enter at least 2 options",
+    errApi: "Error, please try again", optPh: n => "Option " + n,
+    dilemmaPh: "e.g. Should I quit my job...",
+    prefPh: "e.g. I value stability...",
+    prompt: (d, o, p) => "You are a wise advisor. Dilemma: " + d + ". Options: " + o.join(", ") + (p ? ". Preference: " + p : "") + ". Give a short analysis (3 sentences) and a clear recommendation. Warm and human."
+  }
+};
+
+function setLang(l) {
+  lang = l;
+  const t = T[l];
+  document.documentElement.lang = l;
+  document.body.dir = l === "he" ? "rtl" : "ltr";
+  document.getElementById("logo").textContent = t.logo;
+  document.getElementById("tagline").textContent = t.tagline;
+  document.getElementById("lbl-dilemma").textContent = t.lblDilemma;
+  document.getElementById("lbl-options").textContent = t.lblOptions;
+  document.getElementById("lbl-pref").textContent = t.lblPref;
+  document.getElementById("btn-add").textContent = t.btnAdd;
+  document.getElementById("btn-text").textContent = t.btnGo;
+  document.getElementById("result-label").textContent = t.resultLabel;
+  document.getElementById("btn-share").textContent = t.btnShare;
+  document.getElementById("dilemma").placeholder = t.dilemmaPh;
+  document.getElementById("preference").placeholder = t.prefPh;
+  document.querySelectorAll("#optionsList .opt-row input").forEach((inp, i) => inp.placeholder = t.optPh(i+1));
+  document.querySelectorAll(".lang-btn").forEach(btn => btn.classList.remove("active"));
+  document.querySelectorAll(".lang-btn")[l === "he" ? 0 : 1].classList.add("active");
+}
+
+function addOpt() {
+  const list = document.getElementById("optionsList");
+  const n = list.children.length + 1;
+  const row = document.createElement("div");
+  row.className = "opt-row";
+  row.innerHTML = '<input placeholder="' + T[lang].optPh(n) + '" /><button class="rm-btn" onclick="removeOpt(this)">×</button>';
+  list.appendChild(row);
+}
+
+function removeOpt(btn) {
+  if (document.getElementById("optionsList").children.length <= 2) return;
+  btn.parentElement.remove();
+}
+
+async function solve() {
+  const t = T[lang];
+  const dilemma = document.getElementById("dilemma").value.trim();
+  const pref = document.getElementById("preference").value.trim();
+  const options = Array.from(document.querySelectorAll("#optionsList .opt-row input")).map(i => i.value.trim()).filter(Boolean);
+
+  const errEl = document.getElementById("errorMsg");
+  errEl.style.display = "none";
+
+  if (!dilemma) { errEl.textContent = t.errDilemma; errEl.style.display = "block"; return; }
+  if (options.length < 2) { errEl.textContent = t.errOptions; errEl.style.display = "block"; return; }
+
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  document.getElementById("btn-text").textContent = t.loading;
+  document.getElementById("resultCard").style.display = "none";
+
+  try {
+    const res = await fetch("/.netlify/functions/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        messages: [{ role: "user", content: t.prompt(dilemma, options, pref) }]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || res.status);
+    document.getElementById("resultText").textContent = data.content[0].text;
+    document.getElementById("resultCard").style.display = "block";
+    document.getElementById("resultCard").scrollIntoView({ behavior: "smooth" });
+  } catch(e) {
+    errEl.textContent = t.errApi + " (" + e.message + ")";
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    document.getElementById("btn-text").textContent = t.btnGo;
+  }
+}
+
+function shareResult() {
+  const dilemma = document.getElementById("dilemma").value;
+  const result = document.getElementById("resultText").textContent;
+  const text = lang === "he"
+    ? "הדילמה שלי: " + dilemma + "\n\nה-AI המליץ:\n" + result.slice(0, 200) + "..."
+    : "My dilemma: " + dilemma + "\n\nAI recommended:\n" + result.slice(0, 200) + "...";
+  if (navigator.share) navigator.share({ text });
+  else navigator.clipboard.writeText(text).then(() => alert("✅ הועתק!"));
+}
+</script>
+</body>
+</html>
